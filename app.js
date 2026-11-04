@@ -139,8 +139,11 @@ function fmtDate(d, style) {
     long: { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }, full: { day: '2-digit', month: '2-digit', year: 'numeric' } };
   return day(d).toLocaleDateString('de-DE', opts[style] || opts.long);
 }
-const SIG = { positiv: ['Positiv', '▲'], neutral: ['Neutral', '●'], gemischt: ['Gemischt', '◆'], negativ: ['Negativ', '▼'] };
-const sig = (s) => `<span class="sig ${esc(s)}"><i aria-hidden="true">${SIG[s]?.[1] || ''}</i>${SIG[s]?.[0] || esc(s)}</span>`;
+const SIG = {
+  sehr_positiv: ['Sehr positiv', '▲▲'], positiv: ['Positiv', '▲'], gemischt: ['Gemischt', '◆'],
+  neutral: ['Neutral', '●'], negativ: ['Negativ', '▼'], sehr_negativ: ['Sehr negativ', '▼▼'],
+};
+const sig = (s, why) => `<span class="sig ${esc(s)}"${why ? ` title="${esc(why)}"` : ''}><i aria-hidden="true">${SIG[s]?.[1] || ''}</i>${SIG[s]?.[0] || esc(s)}</span>`;
 const REC = { strong_buy: 'Stark kaufen', buy: 'Kaufen', hold: 'Halten', underperform: 'Untergewichten', sell: 'Verkaufen' };
 const SERIES = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6', '--s7'];
 const exch = (t) => (t.endsWith('.DE') ? 'Xetra' : 'US');
@@ -229,7 +232,7 @@ function glanceItem(s) {
   return `<li><a href="#${slug(s.ticker)}" class="tap" data-t="${esc(s.ticker)}">
     <span class="nm"><span>${esc(nameOf(s))}</span>${s.type === 'pick' ? '<span class="tag">Neu</span>' : ''}</span>
     <span class="px">${cur(s.price, s.currency)}</span>
-    <span class="sub"><span class="tk">${esc(tickerOf(s))}</span>${sig(s.signal)}</span>
+    <span class="sub"><span class="tk">${esc(tickerOf(s))}</span>${sig(s.signal, s.signal_reason)}</span>
     <span class="sub2">${chg(s.chg_1d, 1, true)}</span>
   </a></li>`;
 }
@@ -240,7 +243,7 @@ function rowHtml(s) {
     <td class="num">${cur(s.price, s.currency)}</td>
     <td>${chg(s.chg_1d)}</td><td>${chg(s.chg_1w)}</td><td>${chg(s.chg_1m)}</td><td>${chg(s.chg_ytd)}</td>
     <td>${s.target_mean ? `<span class="num">${cur(s.target_mean, s.currency)}</span> <span class="faint small">(${signed(s.target_upside, 0)})</span>` : '-'}</td>
-    <td>${sig(s.signal)}</td></tr>`;
+    <td>${sig(s.signal, s.signal_reason)}</td></tr>`;
 }
 
 function eventsHtml(r, cls) {
@@ -314,6 +317,7 @@ function stockHtml(s, date) {
         <div class="meta"><span class="tk">${esc(tickerOf(s))} · ${exch(s.ticker)}</span>${sig(s.signal)}</div></div>
       <div class="price"><div class="p">${cur(s.price, s.currency)}</div><div>${chg(s.chg_1d, 1, true)}</div></div>
     </div>
+    ${s.signal_reason ? `<p class="sig-reason ${esc(s.signal)}"><strong>Lage:</strong> ${esc(s.signal_reason)}</p>` : ''}
     ${s.pick_reason ? `<p class="pick-reason"><strong>Warum heute?</strong> ${esc(s.pick_reason)}</p>` : ''}
     <p class="headline">${esc(s.headline)}</p>
     <p class="meaning">${esc(s.meaning)}</p>

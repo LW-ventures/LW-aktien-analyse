@@ -11,7 +11,7 @@
   --ink: #12141a; --ink-2: #4a505e; --ink-3: #6f7685;
   --accent: #2547d0; --accent-soft: #e6ebfb; --accent-ink: #fcfcfd;
   --up: #0f7a47; --down: #c4342b; --warn: #9a6200;
-  --up-soft: #e3f3ea; --down-soft: #fbe7e5; --warn-soft: #f8eedb;
+  --up-soft: #e3f3ea; --down-soft: #fbe7e5; --warn-soft: #f8eedb; --on-status: #fcfcfd;
   --grid: #e8eaee; --price: #2547d0; --sma: #9097a5;
   --s1: #0072b2; --s2: #e08a00; --s3: #009e73; --s4: #cc79a7; --s5: #9a7b12; --s6: #d0342c; --s7: #6a4fb3;
   --shadow: 0 1px 2px rgb(18 20 26 / .04), 0 8px 24px rgb(18 20 26 / .05);
@@ -26,7 +26,7 @@
     --ink: #eceef2; --ink-2: #b3b9c4; --ink-3: #8b92a0;
     --accent: #8aa4ff; --accent-soft: #1d2440; --accent-ink: #0c0d10;
     --up: #3fcf8e; --down: #ff6b61; --warn: #f0b545;
-    --up-soft: #12291f; --down-soft: #301615; --warn-soft: #2e2410;
+    --up-soft: #12291f; --down-soft: #301615; --warn-soft: #2e2410; --on-status: #0c0d10;
     --grid: #22262d; --price: #8aa4ff; --sma: #6b7382;
     --s1: #4aa3e0; --s2: #f0a530; --s3: #2fc497; --s4: #e294c0; --s5: #e3cf5a; --s6: #f26b63; --s7: #a58ff0;
     --shadow: none;
@@ -38,7 +38,7 @@
   --ink: #eceef2; --ink-2: #b3b9c4; --ink-3: #8b92a0;
   --accent: #8aa4ff; --accent-soft: #1d2440; --accent-ink: #0c0d10;
   --up: #3fcf8e; --down: #ff6b61; --warn: #f0b545;
-  --up-soft: #12291f; --down-soft: #301615; --warn-soft: #2e2410;
+  --up-soft: #12291f; --down-soft: #301615; --warn-soft: #2e2410; --on-status: #0c0d10;
   --grid: #22262d; --price: #8aa4ff; --sma: #6b7382;
   --s1: #4aa3e0; --s2: #f0a530; --s3: #2fc497; --s4: #e294c0; --s5: #e3cf5a; --s6: #f26b63; --s7: #a58ff0;
   --shadow: none;
@@ -139,6 +139,14 @@ section, article { margin-bottom: 16px; }
 .sig.negativ { color: var(--down); background: var(--down-soft); }
 .sig.gemischt { color: var(--warn); background: var(--warn-soft); }
 .sig.neutral { color: var(--ink-2); background: var(--surface-2); }
+/* Die starken Stufen gefüllt, damit sie in der Liste sofort herausstechen */
+.sig.sehr_positiv { color: var(--on-status); background: var(--up); }
+.sig.sehr_negativ { color: var(--on-status); background: var(--down); }
+.sig-reason { margin-top: 12px; padding: 9px 12px; border-radius: 10px; background: var(--surface-2); font-size: .875rem; color: var(--ink-2); border-left: 3px solid var(--ink-3); }
+.sig-reason strong { color: var(--ink); font-weight: 600; }
+.sig-reason.sehr_positiv, .sig-reason.positiv { border-left-color: var(--up); }
+.sig-reason.sehr_negativ, .sig-reason.negativ { border-left-color: var(--down); }
+.sig-reason.gemischt { border-left-color: var(--warn); }
 .sig i { font-style: normal; font-size: .7rem; }
 
 /* ---------- Auf einen Blick: Liste (Handy) / Tabelle (ab Tablet) ---------- */

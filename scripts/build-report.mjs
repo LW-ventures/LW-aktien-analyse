@@ -2,6 +2,7 @@
 // und legt den Bericht VERSCHLÜSSELT unter reports/<datum>.enc ab.
 // Nutzung: node scripts/build-report.mjs --raw /tmp/aktien/raw.json --analysis /tmp/aktien/analysis.json
 //          [--check]   nur prüfen, nichts schreiben
+//          [--dir <ordner>]  anderer Seitenordner (keys.json + reports/), z. B. für lokale Tests
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,11 +17,13 @@ if (!args.raw || !args.analysis) { console.error('Fehlt: --raw <datei> --analysi
 
 const raw = JSON.parse(fs.readFileSync(args.raw, 'utf8'));
 const analysis = JSON.parse(fs.readFileSync(args.analysis, 'utf8'));
-const keys = JSON.parse(fs.readFileSync(path.join(root, 'keys.json'), 'utf8'));
+const site = typeof args.dir === 'string' ? path.resolve(args.dir) : root;
+const keys = JSON.parse(fs.readFileSync(path.join(site, 'keys.json'), 'utf8'));
 
 const problems = [];
 const need = (cond, msg) => { if (!cond) problems.push(msg); };
-const SIGNALS = ['positiv', 'neutral', 'gemischt', 'negativ'];
+// Nachrichtenlage, von stark positiv bis stark negativ. "gemischt" = Gutes und Schlechtes, "neutral" = kaum Neuigkeiten.
+const SIGNALS = ['sehr_positiv', 'positiv', 'gemischt', 'neutral', 'negativ', 'sehr_negativ'];
 const isDate = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
 const isUrl = (u) => /^https?:\/\//.test(u || '');
 
@@ -31,14 +34,16 @@ const stocks = raw.stocks.map((s) => {
   const a = analysis.stocks?.[s.ticker];
   if (!a) { problems.push(`Analyse für ${s.ticker} fehlt`); return s; }
   const p = `${s.ticker}:`;
+  if (typeof a.signal === 'string') a.signal = a.signal.trim().toLowerCase().replace(/\s+/g, '_');
   need(SIGNALS.includes(a.signal), `${p} signal muss eines von ${SIGNALS.join('/')} sein`);
+  need(a.signal_reason?.length >= 10 && a.signal_reason.length <= 160, `${p} signal_reason fehlt (ein Satz, warum diese Einstufung)`);
   need(a.headline?.length > 10, `${p} headline fehlt`);
   need(a.meaning?.length > 80, `${p} meaning (Einordnung) fehlt oder ist zu kurz`);
   need(Array.isArray(a.news) && a.news.length >= 2, `${p} mindestens 2 Nachrichten nötig`);
   (a.news || []).forEach((n, i) => need(n.title && isUrl(n.url) && n.source, `${p} news[${i}] braucht title, source, url`));
   (a.analysts || []).forEach((n, i) => need(n.firm && (n.action || n.target), `${p} analysts[${i}] braucht firm und action oder target`));
-  need(Array.isArray(a.chances) && a.chances.length >= 1, `${p} chances fehlen`);
-  need(Array.isArray(a.risks) && a.risks.length >= 1, `${p} risks fehlen`);
+  need(Array.isArray(a.chances) && a.chances.length >= 3, `${p} genau 3 chances nötig`);
+  need(Array.isArray(a.risks) && a.risks.length >= 3, `${p} genau 3 risks nötig`);
   (a.events || []).forEach((e, i) => need(isDate(e.date) && e.label, `${p} events[${i}] braucht date (JJJJ-MM-TT) und label`));
   if (s.type === 'pick') need(a.pick_reason?.length > 40, `${p} pick_reason fehlt (warum diese Aktie?)`);
   return { ...s, ...a };
@@ -65,10 +70,10 @@ const report = {
 if (args.check) { console.log(`OK – ${stocks.length} Aktien geprüft, nichts geschrieben.`); process.exit(0); }
 
 const enc = await encryptReport(keys.publicKey, report);
-fs.mkdirSync(path.join(root, 'reports'), { recursive: true });
-fs.writeFileSync(path.join(root, 'reports', `${report.date}.enc`), JSON.stringify(enc));
+fs.mkdirSync(path.join(site, 'reports'), { recursive: true });
+fs.writeFileSync(path.join(site, 'reports', `${report.date}.enc`), JSON.stringify(enc));
 
-const idxFile = path.join(root, 'reports', 'index.json');
+const idxFile = path.join(site, 'reports', 'index.json');
 const idx = fs.existsSync(idxFile) ? JSON.parse(fs.readFileSync(idxFile, 'utf8')) : { dates: [] };
 idx.dates = [...new Set([report.date, ...idx.dates])].sort().reverse();
 idx.updated = report.generated_at;

@@ -52,20 +52,28 @@ Anleitung für den automatischen Lauf. Die Watchlist steht im Auftrag der Routin
   "stocks": {
     "TICKER": {
       "short_name": "nur bei Zusatz-Aktien: kurzer Name",
-      "signal": "positiv | neutral | gemischt | negativ",
+      "signal": "sehr_positiv | positiv | gemischt | neutral | negativ | sehr_negativ",
+      "signal_reason": "Ein Satz (max. 160 Zeichen), warum genau diese Stufe",
       "headline": "Eine Zeile: das Wichtigste heute",
-      "meaning": "3-5 Sätze: Was ist passiert, was bedeutet es für die Aktie, wie ordnen Kennzahlen/Kursziel es ein?",
+      "meaning": "4-5 Sätze: Was ist passiert, was bedeutet es für die Aktie, wie ordnen Kennzahlen/Kursziel es ein?",
       "pick_reason": "nur bei Zusatz-Aktien: 2 Sätze, warum sie heute auffällt",
       "news": [{ "title": "auf Deutsch", "source": "CNBC", "url": "https://…", "date": "JJJJ-MM-TT", "note": "1 Satz Bedeutung" }],
       "analysts": [{ "firm": "Goldman Sachs", "action": "Kursziel erhöht", "target": "230 → 258 €", "date": "JJJJ-MM-TT", "url": "https://…" }],
-      "chances": ["2-3 kurze Punkte"],
-      "risks": ["2-3 kurze Punkte"],
+      "chances": ["genau 3 konkrete Punkte"],
+      "risks": ["genau 3 konkrete Punkte"],
       "events": [{ "date": "JJJJ-MM-TT", "label": "Quartalszahlen" }]
     }
   }
 }
 ```
 
-- `signal` beschreibt die **Nachrichtenlage**, keine Empfehlung.
-- 2-4 Nachrichten pro Aktie, neueste zuerst. `analysts` darf leer sein, wenn es nichts Neues gibt.
+- `signal` beschreibt die **Nachrichtenlage**, keine Empfehlung. Die Stufen sollen die Aktien untereinander vergleichbar machen, also bewusst abstufen:
+  - **sehr_positiv:** klarer, starker Anlass in den letzten Tagen, z. B. Zahlen deutlich über Erwartung *und* angehobene Prognose, mehrere Hochstufungen, großer Auftrag. Höchstens 1-2 Aktien pro Tag, an vielen Tagen keine.
+  - **positiv:** überwiegend gute Nachrichten oder freundlicher Trend ohne großen Einzelanlass.
+  - **gemischt:** gute und schlechte Nachrichten halten sich die Waage.
+  - **neutral:** kaum Neuigkeiten, nichts Wesentliches passiert.
+  - **negativ:** überwiegend schlechte Nachrichten oder schwacher Trend.
+  - **sehr_negativ:** klarer, starker negativer Anlass, z. B. Prognosesenkung, mehrere Herabstufungen, Ermittlungen, Kurssturz mit Begründung. Ebenfalls selten.
+  - Eine reine Tagesbewegung des Gesamtmarkts (alle steigen) ist kein Grund für „sehr“. Vergleiche die Aktien vor dem Festlegen miteinander.
+- 3-4 Nachrichten pro Aktie, neueste zuerst. `analysts` darf leer sein, wenn es nichts Neues gibt.
 - Ruhiger Tag ohne Neuigkeiten: kurz sagen, dass es nichts Wesentliches gab, und die Lage anhand der Kennzahlen einordnen.
