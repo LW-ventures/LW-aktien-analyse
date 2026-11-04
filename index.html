@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0d10" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Aktien">
+<title>Aktien-Analyse</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232547d0'/%3E%3Cpath d='M7 21l6-6 4 3 8-8' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/GeistMono-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="login" class="login" hidden>
+  <form id="login-form" class="login-box" autocomplete="on">
+    <div class="mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 21l6-6 4 3 8-8" /></svg></div>
+    <h1>Aktien-Analyse</h1>
+    <p>Dein tägliches Briefing. Einmal entsperren, danach bleibt dieses Gerät angemeldet.</p>
+    <input type="text" name="username" autocomplete="username" value="aktien" hidden>
+    <div class="field">
+      <label for="pw">Passwort</label>
+      <input id="pw" type="password" autocomplete="current-password" required autofocus>
+    </div>
+    <button id="login-btn" class="btn" type="submit">Entsperren</button>
+    <p id="login-msg" class="msg" role="alert"></p>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header class="top">
+    <div class="wrap top-in">
+      <div class="brand"><span class="mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 21l6-6 4 3 8-8" /></svg></span><span>Aktien<span class="brand-x">-Analyse</span></span></div>
+      <div class="top-actions">
+        <label class="sr" for="archive">Bericht vom</label>
+        <select id="archive" class="ctl" title="Ältere Berichte"></select>
+        <button id="logout" class="ctl" type="button" title="Dieses Gerät abmelden">Abmelden</button>
+      </div>
+    </div>
+    <nav id="jump" class="jump" aria-label="Zu Aktie springen"></nav>
+  </header>
+  <main id="report" class="wrap"></main>
+  <footer class="wrap foot">
+    <p><strong>Keine Anlageberatung.</strong> Diese Seite fasst öffentlich verfügbare Kursdaten, Nachrichten und Analystenmeinungen automatisch zusammen und ordnet sie ein. Sie ist keine Empfehlung zum Kauf oder Verkauf. Angaben ohne Gewähr, Kurse können verzögert sein.</p>
+    <p id="data-note"></p>
+  </footer>
+</div>
+
+<div id="loading" class="loading" aria-live="polite">
+  <p class="msg-line">Lade …</p>
+  <div class="sk" style="height:132px"></div>
+  <div class="sk" style="height:240px"></div>
+  <div class="sk" style="height:320px"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

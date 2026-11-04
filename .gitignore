@@ -1,0 +1,5 @@
+_lokal/
+.claude/
+work/
+*.raw.json
+node_modules/

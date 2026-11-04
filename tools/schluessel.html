@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Zugänge verwalten</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  main { max-width: 640px; }
+  h1 { letter-spacing: -0.025em; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 18px 16px; margin-bottom: 14px; }
+  .card h2 { font-size: 1.0625rem; margin-bottom: 10px; }
+  .card p { margin: 0 0 10px; }
+  .row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .row input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--surface-2); font-size: 16px; }
+  .btn { width: auto; padding: 11px 14px; }
+  .btn.sec { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .hint { font-size: .8rem; color: var(--ink-3); margin: -4px 0 8px; }
+  .hint.bad { color: var(--down); }
+  .ok { color: var(--up); font-weight: 600; }
+  .err { color: var(--down); font-weight: 600; }
+  .warn { background: var(--warn-soft); padding: 10px 12px; border-radius: var(--r-ctl); font-size: .9rem; }
+  ul.entries { list-style: none; padding: 0; margin: 0 0 10px; }
+  ul.entries li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: .9rem; }
+  .tabs { display: flex; gap: 8px; margin: 16px 0; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+</style>
+</head>
+<body>
+<main class="wrap" style="padding-top:20px">
+  <h1 style="font-size:1.3rem">Zugänge verwalten</h1>
+  <p class="muted small">Alles passiert nur in diesem Browser. Passwörter werden nirgends hingeschickt. Am Ende lädst du eine neue <code>keys.json</code> herunter, die ins Repo kommt.</p>
+
+  <div class="tabs" role="tablist">
+    <button class="btn sec" role="tab" aria-selected="true" data-tab="edit">Passwörter ändern</button>
+    <button class="btn sec" role="tab" aria-selected="false" data-tab="new">Komplett neu anlegen</button>
+  </div>
+
+  <section id="tab-edit">
+    <div class="card">
+      <h2>1. Vorhandene Schlüsseldatei öffnen</h2>
+      <p class="muted small">Wird automatisch geladen, wenn die Seite aus dem Projekt läuft. Sonst <code>keys.json</code> auswählen.</p>
+      <div class="row"><input type="file" id="file" accept=".json,application/json"></div>
+      <p id="file-status" class="small"></p>
+    </div>
+    <div class="card">
+      <h2>2. Mit einem gültigen Passwort entsperren</h2>
+      <div class="row"><input type="password" id="unlock-pw" placeholder="Ein vorhandenes Passwort"><button class="btn" id="unlock">Entsperren</button></div>
+      <p id="unlock-status" class="small"></p>
+    </div>
+    <div class="card" id="manage" hidden>
+      <h2>3. Passwörter verwalten</h2>
+      <h3 style="font-size:.95rem;margin:10px 0 6px">Aktuelle Zugänge</h3>
+      <ul class="entries" id="entries"></ul>
+      <h3 style="font-size:.95rem;margin:14px 0 6px">Neues Passwort hinzufügen</h3>
+      <div class="row"><input type="text" id="add-pw" placeholder="Neues Passwort" autocomplete="off" spellcheck="false"><button class="btn sec" id="suggest1" type="button">Vorschlag</button></div>
+      <p class="hint" id="add-hint"></p>
+      <button class="btn" id="add">Hinzufügen</button>
+      <h3 style="font-size:.95rem;margin:18px 0 6px">Passwort sperren</h3>
+      <p class="muted small">Gib das Passwort ein, das nicht mehr funktionieren soll.</p>
+      <div class="row"><input type="text" id="rm-pw" placeholder="Zu sperrendes Passwort" autocomplete="off"><button class="btn sec" id="rm">Sperren</button></div>
+      <p id="manage-status" class="small"></p>
+      <p class="warn">Gesperrte Passwörter kommen nicht mehr rein. Wer früher schon angemeldet war, bleibt auf seinem Gerät aber angemeldet. Wenn du jemanden vollständig aussperren willst: „Komplett neu anlegen“. Dann sind allerdings auch die alten Berichte nicht mehr lesbar.</p>
+      <button class="btn" id="dl-edit">keys.json herunterladen</button>
+    </div>
+  </section>
+
+  <section id="tab-new" hidden>
+    <div class="card">
+      <h2>Neues Schlüsselpaar mit Passwörtern</h2>
+      <p class="warn"><strong>Achtung:</strong> Ein neues Schlüsselpaar macht alle bisherigen Berichte unlesbar und meldet alle Geräte ab. Nur beim ersten Einrichten oder zum vollständigen Aussperren benutzen.</p>
+      <div id="new-list"></div>
+      <button class="btn sec" id="new-more" type="button">+ Weiteres Passwort</button>
+      <p style="margin-top:14px"><button class="btn" id="create">Erstellen und herunterladen</button></p>
+      <p id="new-status" class="small"></p>
+    </div>
+  </section>
+</main>
+
+<script>
+'use strict';
+const $ = (s) => document.querySelector(s);
+const subtle = crypto.subtle;
+const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const RSA = { name: 'RSA-OAEP', hash: 'SHA-256' };
+const ITER = 600000;
+const today = () => new Date().toISOString().slice(0, 10);
+let keys = null, pkcs8 = null;
+
+const WORDS = ('apfel anker ampel balkon birke blitz boot brezel bruecke burg dach delfin donner drache eiche eimer engel erbse falke feder fenster fichte flagge floete fluss forelle frosch fuchs gabel garten geige gipfel glocke gras hafen hammer hase hecht heide himmel hirsch holz honig hummel igel insel jacke juwel kaffee kamel kanne kerze kiesel kirsche klee koffer komet kompass krone kugel lampe laterne leiter lerche linde loewe magnet mantel marmor meise mond moos muehle nebel nelke nordlicht nuss oase ofen orgel otter palme papier pinsel planet pokal quelle rabe radio rakete regen ring rose rubin sattel schaf schiff schnee segel sonne spiegel stern strand tanne teller tiger tinte tulpe turm uhr ufer vase vogel vulkan wal wald wasser welle wiese wolke zebra zelt ziegel zitrone zucker zwerg').split(' ');
+function suggest() {
+  const r = crypto.getRandomValues(new Uint32Array(6));
+  return [0, 1, 2, 3, 4].map((i) => WORDS[r[i] % WORDS.length]).join('-') + '-' + (r[5] % 90 + 10);
+}
+function strength(pw) {
+  if (pw.length < 12) return { bad: true, text: 'Zu kurz. Mindestens 12 Zeichen, besser 20+ (z. B. 5 Wörter).' };
+  if (pw.length < 18) return { bad: false, text: 'Okay. Länger wäre sicherer.' };
+  return { bad: false, text: 'Gut.' };
+}
+
+async function wrap(bytes, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const base = await subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+  const k = await subtle.deriveKey({ name: 'PBKDF2', salt, iterations: ITER, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+  return { id: b64(crypto.getRandomValues(new Uint8Array(6))), created: today(), iterations: ITER, salt: b64(salt), iv: b64(iv), data: b64(await subtle.encrypt({ name: 'AES-GCM', iv }, k, bytes)) };
+}
+async function tryUnwrap(w, password) {
+  try {
+    const base = await subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+    const k = await subtle.deriveKey({ name: 'PBKDF2', salt: unb64(w.salt), iterations: w.iterations, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    return new Uint8Array(await subtle.decrypt({ name: 'AES-GCM', iv: unb64(w.iv) }, k, unb64(w.data)));
+  } catch { return null; }
+}
+function download(obj) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 1) + '\n'], { type: 'application/json' }));
+  a.download = 'keys.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const busy = (btn, on, label) => { btn.disabled = on; if (label) btn.textContent = label; };
+
+/* Tabs */
+document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-selected', x === b));
+  $('#tab-edit').hidden = b.dataset.tab !== 'edit'; $('#tab-new').hidden = b.dataset.tab !== 'new';
+}));
+
+/* Bearbeiten */
+function setKeys(k, from) { keys = k; pkcs8 = null; $('#manage').hidden = true; $('#file-status').innerHTML = `<span class="ok">Geladen</span> (${from}), ${k.wraps.length} Passwort-Zugänge.`; }
+fetch('../keys.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((k) => k && setKeys(k, 'aus dem Projekt')).catch(() => {});
+$('#file').addEventListener('change', async (e) => {
+  try { setKeys(JSON.parse(await e.target.files[0].text()), e.target.files[0].name); } catch { $('#file-status').innerHTML = '<span class="err">Keine gültige keys.json.</span>'; }
+});
+$('#unlock').addEventListener('click', async () => {
+  if (!keys) return ($('#unlock-status').innerHTML = '<span class="err">Erst die Schlüsseldatei laden.</span>');
+  busy($('#unlock'), true, 'Prüfe …');
+  for (const w of keys.wraps) { pkcs8 = await tryUnwrap(w, $('#unlock-pw').value); if (pkcs8) break; }
+  busy($('#unlock'), false, 'Entsperren');
+  if (!pkcs8) return ($('#unlock-status').innerHTML = '<span class="err">Passwort passt zu keinem Zugang.</span>');
+  $('#unlock-status').innerHTML = '<span class="ok">Entsperrt.</span>'; $('#unlock-pw').value = '';
+  $('#manage').hidden = false; listEntries();
+});
+function listEntries() {
+  $('#entries').innerHTML = keys.wraps.map((w, i) => `<li><span>Zugang ${i + 1} <span class="muted small">· angelegt ${w.created || keys.created || '?'} · ${w.id}</span></span></li>`).join('');
+}
+$('#suggest1').addEventListener('click', () => { $('#add-pw').value = suggest(); $('#add-pw').dispatchEvent(new Event('input')); });
+$('#add-pw').addEventListener('input', () => { const s = strength($('#add-pw').value); $('#add-hint').textContent = s.text; $('#add-hint').classList.toggle('bad', s.bad); });
+$('#add').addEventListener('click', async () => {
+  const pw = $('#add-pw').value;
+  if (strength(pw).bad) return ($('#manage-status').innerHTML = '<span class="err">Passwort zu kurz.</span>');
+  busy($('#add'), true, 'Rechne …');
+  for (const w of keys.wraps) if (await tryUnwrap(w, pw)) { busy($('#add'), false, 'Hinzufügen'); return ($('#manage-status').innerHTML = '<span class="err">Dieses Passwort gibt es schon.</span>'); }
+  keys.wraps.push(await wrap(pkcs8, pw));
+  busy($('#add'), false, 'Hinzufügen');
+  $('#add-pw').value = ''; $('#add-hint').textContent = '';
+  $('#manage-status').innerHTML = '<span class="ok">Hinzugefügt.</span> Notiere dir das Passwort und lade am Ende die Datei herunter.';
+  listEntries();
+});
+$('#rm').addEventListener('click', async () => {
+  busy($('#rm'), true, 'Suche …');
+  let idx = -1;
+  for (let i = 0; i < keys.wraps.length; i++) if (await tryUnwrap(keys.wraps[i], $('#rm-pw').value)) { idx = i; break; }
+  busy($('#rm'), false, 'Sperren');
+  if (idx < 0) return ($('#manage-status').innerHTML = '<span class="err">Dieses Passwort gibt es nicht.</span>');
+  if (keys.wraps.length === 1) return ($('#manage-status').innerHTML = '<span class="err">Das letzte Passwort kann nicht gesperrt werden.</span>');
+  keys.wraps.splice(idx, 1); $('#rm-pw').value = '';
+  $('#manage-status').innerHTML = `<span class="ok">Zugang ${idx + 1} gesperrt.</span> Am Ende herunterladen nicht vergessen.`;
+  listEntries();
+});
+$('#dl-edit').addEventListener('click', () => download(keys));
+
+/* Neu anlegen */
+function addNewRow(value = '') {
+  const div = document.createElement('div');
+  div.innerHTML = `<div class="row"><input type="text" class="np" placeholder="Passwort" autocomplete="off" spellcheck="false" value="${value}"><button class="btn sec" type="button">Vorschlag</button></div><p class="hint"></p>`;
+  const inp = div.querySelector('input'), hint = div.querySelector('.hint');
+  inp.addEventListener('input', () => { const s = strength(inp.value); hint.textContent = s.text; hint.classList.toggle('bad', s.bad); });
+  div.querySelector('button').addEventListener('click', () => { inp.value = suggest(); inp.dispatchEvent(new Event('input')); });
+  $('#new-list').appendChild(div);
+}
+addNewRow(); $('#new-more').addEventListener('click', () => addNewRow());
+$('#create').addEventListener('click', async () => {
+  const pws = [...document.querySelectorAll('.np')].map((i) => i.value).filter(Boolean);
+  if (!pws.length) return ($('#new-status').innerHTML = '<span class="err">Mindestens ein Passwort eingeben.</span>');
+  if (pws.some((p) => strength(p).bad)) return ($('#new-status').innerHTML = '<span class="err">Mindestens ein Passwort ist zu kurz.</span>');
+  if (new Set(pws).size !== pws.length) return ($('#new-status').innerHTML = '<span class="err">Passwörter doppelt.</span>');
+  busy($('#create'), true, 'Erzeuge Schlüssel …');
+  const pair = await subtle.generateKey({ ...RSA, modulusLength: 3072, publicExponent: new Uint8Array([1, 0, 1]) }, true, ['encrypt', 'decrypt']);
+  const priv = new Uint8Array(await subtle.exportKey('pkcs8', pair.privateKey));
+  const out = { v: 1, created: today(), publicKey: b64(await subtle.exportKey('spki', pair.publicKey)), wraps: [] };
+  for (const pw of pws) out.wraps.push(await wrap(priv, pw));
+  busy($('#create'), false, 'Erstellen und herunterladen');
+  download(out);
+  $('#new-status').innerHTML = `<span class="ok">Fertig: keys.json mit ${pws.length} Passwort(en) heruntergeladen.</span> Notiere dir die Passwörter, sie lassen sich nicht wiederherstellen.`;
+});
+</script>
+</body>
+</html>

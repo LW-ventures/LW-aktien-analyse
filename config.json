@@ -1,0 +1,9 @@
+{
+  "indices": [
+    { "ticker": "^GSPC", "name": "S&P 500" },
+    { "ticker": "^NDX", "name": "Nasdaq 100" },
+    { "ticker": "^GDAXI", "name": "DAX" },
+    { "ticker": "^VIX", "name": "VIX" },
+    { "ticker": "EURUSD=X", "name": "EUR/USD" }
+  ]
+}
